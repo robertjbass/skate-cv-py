@@ -4,7 +4,7 @@ import numpy as np
 NO_MOTION_DURATION_MS = 500
 
 # previewing video is slow, so only do it if you need to
-SHOW_VIDEO = True
+SHOW_VIDEO = False
 
 
 def detect_movement(
@@ -25,7 +25,7 @@ def detect_movement(
 
     while cap.isOpened():
         frame_count += 1
-        print("frame", frame_count)
+        # print("frame", frame_count)
 
         # process every other frame
         if frame_count % 2 == 0:
@@ -60,7 +60,7 @@ def detect_movement(
 
             # Check if time between start and end exceeds the minimum duration
             if (end_time - start_time) > no_motion_duration:
-                print("saving clip")
+                print("found clip")
                 clips.append({"start": start_time, "end": end_time})
             else:
                 print(
@@ -92,8 +92,51 @@ def detect_movement(
     return clips
 
 
+def create_clips(video_path, motion_clips):
+    cap = cv2.VideoCapture(video_path)
+
+    for index, clip in enumerate(motion_clips):
+        start_time = clip["start"]
+        end_time = clip["end"]
+
+        # Set the video capture to the start of the clip
+        cap.set(cv2.CAP_PROP_POS_MSEC, start_time)
+
+        # Create a video writer object
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        clip_length = int((end_time - start_time) / 1000)
+        clip_number = index + 1
+        clip_name = f"output_clips/clip_{clip_number}_{clip_length}s.mp4"
+
+        out = cv2.VideoWriter(
+            clip_name,
+            fourcc,
+            cap.get(cv2.CAP_PROP_FPS),
+            (
+                int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+            ),
+        )
+
+        # Write the clip to the output file
+        while cap.get(cv2.CAP_PROP_POS_MSEC) < end_time:
+            ret, frame = cap.read()
+
+            if not ret:
+                break
+
+            out.write(frame)
+
+        print(f"Saved clip from {start_time}ms to {end_time}ms")
+        out.release()
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+
 if __name__ == "__main__":
     video_path = "input_videos/test_video.mp4"
     motion_clips = detect_movement(video_path)
-
     print(motion_clips)
+
+    create_clips(video_path, motion_clips)
