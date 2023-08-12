@@ -1,0 +1,4 @@
+.env
+input_videos/*
+output_clips/*
+venv
