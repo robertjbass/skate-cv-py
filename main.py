@@ -1,11 +1,11 @@
 import cv2
-import numpy as np
 import os
 
 NO_MOTION_DURATION_MS = 500
 SHOW_VIDEO = False
-INPUT_FOLDER = "input_videos"
-OUTPUT_FOLDER = "output_clips"
+USER = "bob[at]bbass[dot]co"
+INPUT_FOLDER = f"videos/{USER}/input"
+OUTPUT_FOLDER = f"videos/{USER}/output"
 
 # TODO - add buffer to start and end of clips
 CLIP_START_BUFFER_MS = 1000
@@ -139,6 +139,14 @@ def detect_and_create_clips(
 
 def main():
     video_path = f"{INPUT_FOLDER}/test_video.mp4"
+
+    if not os.path.exists(video_path):
+        print(f"Video not found at {video_path}")
+        return
+
+    if not os.path.exists(OUTPUT_FOLDER):
+        os.makedirs(OUTPUT_FOLDER)
+
     detect_and_create_clips(video_path)
 
 

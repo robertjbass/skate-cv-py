@@ -1,5 +1,4 @@
 .DS_Store
 venv
-input_videos/*
-output_clips/*
+videos/*
 .env
