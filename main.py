@@ -7,9 +7,19 @@ SHOW_VIDEO = False
 INPUT_FOLDER = "input_videos"
 OUTPUT_FOLDER = "output_clips"
 
-# TODO
+# TODO - add buffer to start and end of clips
 CLIP_START_BUFFER_MS = 1000
 CLIP_END_BUFFER_MS = 1000
+
+
+def display_ms_as_minutes_and_seconds(ms):
+    seconds = round(ms / 1000)
+    if seconds < 60:
+        return f"{seconds}s"
+    else:
+        minutes = seconds // 60
+        seconds = seconds % 60
+        return f"{minutes}m{seconds}s"
 
 
 def detect_and_create_clips(
@@ -22,6 +32,9 @@ def detect_and_create_clips(
     ret, frame1 = cap.read()
     ret, frame2 = cap.read()
 
+    # get video frame count
+    total_frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
     motion_started = False
     start_time = 0
     # VideoWriter object for saving clips
@@ -30,8 +43,16 @@ def detect_and_create_clips(
     frame_count = 0
     clip_index = 0
 
+    percent_complete = 0
+    clips_saved = 0
+
     while cap.isOpened():
         frame_count += 1
+        # print(f"Processed {frame_count} frames out of {total_frame_count} frames.")
+        percent = round(frame_count / total_frame_count * 100)
+        if percent > percent_complete:
+            percent_complete = percent
+            print(f"{percent_complete}% complete.")
 
         diff = cv2.absdiff(frame1, frame2)
         gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
@@ -78,14 +99,17 @@ def detect_and_create_clips(
                         f"{OUTPUT_FOLDER}/temp_clip_{clip_index}.mp4", final_clip_name
                     )
                     clip_index += 1
-                print(f"Saved clip from {start_time}ms to {end_time}ms")
+                    clips_saved = clips_saved + 1
+                print(
+                    f"Saved clip from {display_ms_as_minutes_and_seconds(start_time)} to {display_ms_as_minutes_and_seconds(end_time)}"
+                )
             else:
                 # Delete the temporary clip
                 if out:
                     out.release()
                     os.remove(f"{OUTPUT_FOLDER}/temp_clip_{clip_index}.mp4")
                 print(
-                    f"Skipped potential clip from {start_time}ms to {end_time}ms due to short duration."
+                    f"Skipped potential clip from {display_ms_as_minutes_and_seconds(start_time)} to {display_ms_as_minutes_and_seconds(end_time)} due to short duration."
                 )
             motion_started = False
             out = None
@@ -106,8 +130,13 @@ def detect_and_create_clips(
 
     cap.release()
     cv2.destroyAllWindows()
+    print(f"Saved {clips_saved} clips.")
+
+
+def main():
+    video_path = f"{INPUT_FOLDER}/test_video.mp4"
+    detect_and_create_clips(video_path)
 
 
 if __name__ == "__main__":
-    video_path = f"{INPUT_FOLDER}/test_video.mp4"
-    detect_and_create_clips(video_path)
+    main()
