@@ -4,6 +4,12 @@ import os
 
 NO_MOTION_DURATION_MS = 500
 SHOW_VIDEO = False
+INPUT_FOLDER = "input_videos"
+OUTPUT_FOLDER = "output_clips"
+
+# TODO
+CLIP_START_BUFFER_MS = 1000
+CLIP_END_BUFFER_MS = 1000
 
 
 def detect_and_create_clips(
@@ -18,18 +24,14 @@ def detect_and_create_clips(
 
     motion_started = False
     start_time = 0
-    out = None  # VideoWriter object for saving clips
+    # VideoWriter object for saving clips
+    out = None
 
     frame_count = 0
     clip_index = 0
 
     while cap.isOpened():
         frame_count += 1
-
-        if frame_count % 2 == 0:
-            frame1 = frame2
-            ret, frame2 = cap.read()
-            continue
 
         diff = cv2.absdiff(frame1, frame2)
         gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
@@ -49,7 +51,7 @@ def detect_and_create_clips(
 
             # Create a video writer object here to start writing the clip
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-            clip_name = f"output_clips/temp_clip_{clip_index}.mp4"
+            clip_name = f"{OUTPUT_FOLDER}/temp_clip_{clip_index}.mp4"
             out = cv2.VideoWriter(
                 clip_name,
                 fourcc,
@@ -68,12 +70,12 @@ def detect_and_create_clips(
                 # Rename the clip to include its duration
                 clip_length = int((end_time - start_time) / 1000)
                 final_clip_name = (
-                    f"output_clips/clip_{clip_index + 1}_{clip_length}s.mp4"
+                    f"{OUTPUT_FOLDER}/clip_{clip_index + 1}_{clip_length}s.mp4"
                 )
                 if out:
                     out.release()
                     os.rename(
-                        f"output_clips/temp_clip_{clip_index}.mp4", final_clip_name
+                        f"{OUTPUT_FOLDER}/temp_clip_{clip_index}.mp4", final_clip_name
                     )
                     clip_index += 1
                 print(f"Saved clip from {start_time}ms to {end_time}ms")
@@ -81,7 +83,7 @@ def detect_and_create_clips(
                 # Delete the temporary clip
                 if out:
                     out.release()
-                    os.remove(f"output_clips/temp_clip_{clip_index}.mp4")
+                    os.remove(f"{OUTPUT_FOLDER}/temp_clip_{clip_index}.mp4")
                 print(
                     f"Skipped potential clip from {start_time}ms to {end_time}ms due to short duration."
                 )
@@ -107,5 +109,5 @@ def detect_and_create_clips(
 
 
 if __name__ == "__main__":
-    video_path = "input_videos/test_video.mp4"
+    video_path = f"{INPUT_FOLDER}/test_video.mp4"
     detect_and_create_clips(video_path)
