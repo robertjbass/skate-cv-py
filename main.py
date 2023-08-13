@@ -46,13 +46,22 @@ def detect_and_create_clips(
     percent_complete = 0
     clips_saved = 0
 
+    # Create a video writer object here to start writing the clip
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+
+    capture_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    capture_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+
+    print("Processing video...")
     while cap.isOpened():
         frame_count += 1
-        # print(f"Processed {frame_count} frames out of {total_frame_count} frames.")
+
         percent = round(frame_count / total_frame_count * 100)
         if percent > percent_complete:
             percent_complete = percent
-            print(f"{percent_complete}% complete.")
+            if percent_complete % 5 == 0:
+                print(f"{percent_complete}% complete")
 
         diff = cv2.absdiff(frame1, frame2)
         gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
@@ -70,17 +79,12 @@ def detect_and_create_clips(
             start_time = cap.get(cv2.CAP_PROP_POS_MSEC)
             motion_started = True
 
-            # Create a video writer object here to start writing the clip
-            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             clip_name = f"{OUTPUT_FOLDER}/temp_clip_{clip_index}.mp4"
             out = cv2.VideoWriter(
                 clip_name,
                 fourcc,
-                cap.get(cv2.CAP_PROP_FPS),
-                (
-                    int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                    int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-                ),
+                fps,
+                (capture_width, capture_height),
             )
 
         elif not motion_detected and motion_started:
@@ -109,7 +113,7 @@ def detect_and_create_clips(
                     out.release()
                     os.remove(f"{OUTPUT_FOLDER}/temp_clip_{clip_index}.mp4")
                 print(
-                    f"Skipped potential clip from {display_ms_as_minutes_and_seconds(start_time)} to {display_ms_as_minutes_and_seconds(end_time)} due to short duration."
+                    f"Skipped potential clip from {display_ms_as_minutes_and_seconds(start_time)} to {display_ms_as_minutes_and_seconds(end_time)} due to duration under {no_motion_duration}ms"
                 )
             motion_started = False
             out = None
@@ -130,7 +134,7 @@ def detect_and_create_clips(
 
     cap.release()
     cv2.destroyAllWindows()
-    print(f"Saved {clips_saved} clips.")
+    print(f"Finished processing - saved {clips_saved} clips")
 
 
 def main():
