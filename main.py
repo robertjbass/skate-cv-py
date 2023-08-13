@@ -6,6 +6,7 @@ SHOW_VIDEO = False
 USER = "bob[at]bbass[dot]co"
 INPUT_FOLDER = f"videos/{USER}/input"
 OUTPUT_FOLDER = f"videos/{USER}/output"
+COMPLETE_FOLDER = f"videos/{USER}/complete"
 
 # TODO - add buffer to start and end of clips
 CLIP_START_BUFFER_MS = 1000
@@ -149,8 +150,14 @@ def main():
     if not os.path.exists(OUTPUT_FOLDER):
         os.makedirs(OUTPUT_FOLDER)
 
+    if not os.path.exists(COMPLETE_FOLDER):
+        os.makedirs(COMPLETE_FOLDER)
+
     input_files = os.listdir(INPUT_FOLDER)
     print(f"Found {len(input_files)} files in {INPUT_FOLDER}")
+
+    if len(input_files) == 0:
+        return
 
     for index, file in enumerate(input_files):
         video_path = f"{INPUT_FOLDER}/{file}"
@@ -162,6 +169,9 @@ def main():
         )
 
         clips_saved_count = clips_saved_count + clips_saved
+
+        # move to complete folder
+        os.rename(video_path, f"{COMPLETE_FOLDER}/{file}")
 
     print(f"Complete - saved {clips_saved} clips from {len(input_files)} videos")
 
