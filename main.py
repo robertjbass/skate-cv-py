@@ -46,6 +46,9 @@ def detect_and_create_clips(
     percent_complete = 0
     clips_saved = 0
 
+    files_in_output_folder = os.listdir(OUTPUT_FOLDER)
+    existing_file_count = len(files_in_output_folder)
+
     # Create a video writer object here to start writing the clip
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 
@@ -74,14 +77,18 @@ def detect_and_create_clips(
             cv2.contourArea(c) > contour_area_threshold for c in contours
         )
 
+        clip_number = existing_file_count + clip_index + 1
+
+        temporary_clip_path = f"{OUTPUT_FOLDER}/temp_clip_{clip_number}.mp4"
+        complete_clip_path = f"{OUTPUT_FOLDER}/clip_{clip_number}.mp4"
+
         if motion_detected and not motion_started:
             # This is the start of motion
             start_time = cap.get(cv2.CAP_PROP_POS_MSEC)
             motion_started = True
 
-            clip_name = f"{OUTPUT_FOLDER}/temp_clip_{clip_index}.mp4"
             out = cv2.VideoWriter(
-                clip_name,
+                temporary_clip_path,
                 fourcc,
                 fps,
                 (capture_width, capture_height),
@@ -94,14 +101,10 @@ def detect_and_create_clips(
             if (end_time - start_time) > no_motion_duration:
                 # Rename the clip to include its duration
                 clip_length = int((end_time - start_time) / 1000)
-                final_clip_name = (
-                    f"{OUTPUT_FOLDER}/clip_{clip_index + 1}_{clip_length}s.mp4"
-                )
+
                 if out:
                     out.release()
-                    os.rename(
-                        f"{OUTPUT_FOLDER}/temp_clip_{clip_index}.mp4", final_clip_name
-                    )
+                    os.rename(temporary_clip_path, complete_clip_path)
                     clip_index += 1
                     clips_saved = clips_saved + 1
                 print(
@@ -111,7 +114,7 @@ def detect_and_create_clips(
                 # Delete the temporary clip
                 if out:
                     out.release()
-                    os.remove(f"{OUTPUT_FOLDER}/temp_clip_{clip_index}.mp4")
+                    os.remove(f"{OUTPUT_FOLDER}/temp_clip_{clip_number}.mp4")
                 print(
                     f"Skipped potential clip from {display_ms_as_minutes_and_seconds(start_time)} to {display_ms_as_minutes_and_seconds(end_time)} due to duration under {no_motion_duration}ms"
                 )
