@@ -27,12 +27,13 @@ def detect_and_create_clips(
     threshold=30,
     contour_area_threshold=1000,
     no_motion_duration=NO_MOTION_DURATION_MS,
+    video_count_string="",
 ):
     cap = cv2.VideoCapture(video_path)
     ret, frame1 = cap.read()
     ret, frame2 = cap.read()
 
-    # get video frame count
+    # Get video frame count
     total_frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     motion_started = False
@@ -64,7 +65,7 @@ def detect_and_create_clips(
         if percent > percent_complete:
             percent_complete = percent
             if percent_complete % 5 == 0:
-                print(f"{percent_complete}% complete")
+                print(f"Video {video_count_string} | {percent_complete}% complete")
 
         diff = cv2.absdiff(frame1, frame2)
         gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
@@ -116,7 +117,7 @@ def detect_and_create_clips(
                     out.release()
                     os.remove(f"{OUTPUT_FOLDER}/temp_clip_{clip_number}.mp4")
                 print(
-                    f"Skipped potential clip from {display_ms_as_minutes_and_seconds(start_time)} to {display_ms_as_minutes_and_seconds(end_time)} due to duration under {no_motion_duration}ms"
+                    f"Skipped potential clip at {display_ms_as_minutes_and_seconds(end_time)} due to duration under {no_motion_duration}ms"
                 )
             motion_started = False
             out = None
@@ -137,20 +138,32 @@ def detect_and_create_clips(
 
     cap.release()
     cv2.destroyAllWindows()
-    print(f"Finished processing - saved {clips_saved} clips")
+    return clips_saved
 
 
 def main():
-    video_path = f"{INPUT_FOLDER}/test_video.mp4"
-
-    if not os.path.exists(video_path):
-        print(f"Video not found at {video_path}")
+    if not os.path.exists(INPUT_FOLDER):
+        print(f"Video input path not found")
         return
 
     if not os.path.exists(OUTPUT_FOLDER):
         os.makedirs(OUTPUT_FOLDER)
 
-    detect_and_create_clips(video_path)
+    input_files = os.listdir(INPUT_FOLDER)
+    print(f"Found {len(input_files)} files in {INPUT_FOLDER}")
+
+    for index, file in enumerate(input_files):
+        video_path = f"{INPUT_FOLDER}/{file}"
+
+        clips_saved_count = 0
+        clips_saved = detect_and_create_clips(
+            video_path=video_path,
+            video_count_string=f"{index + 1} of {len(input_files)}",
+        )
+
+        clips_saved_count = clips_saved_count + clips_saved
+
+    print(f"Complete - saved {clips_saved} clips from {len(input_files)} videos")
 
 
 if __name__ == "__main__":
